@@ -5,7 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { isValidObjectId, Model } from 'mongoose';
+import { Error as MongooseError, isValidObjectId, Model } from 'mongoose';
 import { Note, NoteDocument } from './notes.schema';
 import { CreateNoteDto } from './dto/create-note.dto';
 import { UpdateNoteDto } from './dto/update-note.dto';
@@ -69,6 +69,12 @@ export class NotesService {
         err instanceof NotFoundException
       ) {
         throw err;
+      }
+      if (
+        err instanceof MongooseError.ValidationError ||
+        err instanceof MongooseError.CastError
+      ) {
+        throw new BadRequestException(`Failed to update note: ${err.message}`);
       }
       throw new InternalServerErrorException('Failed to update note: ', err);
     }

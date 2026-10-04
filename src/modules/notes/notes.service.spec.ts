@@ -1,8 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Note } from './notes.schema';
-import { Types } from 'mongoose';
+import { Note, NoteSchema } from './notes.schema';
+import { BadRequestException } from '@nestjs/common';
+import mongoose, { Types } from 'mongoose';
 
 describe('NotesService', () => {
   let service: NotesService;
@@ -74,6 +75,23 @@ describe('NotesService', () => {
       dto,
       expect.objectContaining({ new: true, runValidators: true }),
     );
+  });
+
+  it('should return a descriptive 400 when update fails validation', async () => {
+    const id = new Types.ObjectId().toHexString();
+    const NoteModel = mongoose.model('NoteValidationSpec', NoteSchema);
+    const validationError = new NoteModel({
+      title: 'Test',
+      tags: { invalid: true },
+    }).validateSync();
+    expect(validationError).toBeDefined();
+    model.findByIdAndUpdate.mockReturnValue({
+      exec: jest.fn().mockRejectedValue(validationError),
+    });
+
+    const promise = service.update(id, { tags: 'work' as any });
+    await expect(promise).rejects.toBeInstanceOf(BadRequestException);
+    await expect(promise).rejects.toThrow(/tags/);
   });
 
   it('should delete a note', async () => {
