@@ -18,7 +18,9 @@ export class NotesService {
     try {
       return await this.noteModel.create(dto);
     } catch (err) {
-      throw new BadRequestException('Failed to create note: ', err);
+      throw new BadRequestException(`Failed to create note: ${err.message}`, {
+        cause: err,
+      });
     }
   }
 

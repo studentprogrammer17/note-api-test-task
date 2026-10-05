@@ -3,6 +3,8 @@ import { NotesService } from './notes.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Note } from './notes.schema';
 import { Types } from 'mongoose';
+import { BadRequestException } from '@nestjs/common';
+import { CreateNoteDto } from './dto/create-note.dto';
 
 describe('NotesService', () => {
   let service: NotesService;
@@ -38,6 +40,19 @@ describe('NotesService', () => {
     const result = await service.create(dto);
     expect(result).toEqual(dto);
     expect(model.create).toHaveBeenCalledWith(dto);
+  });
+
+  it('should include the failure reason when creating a note fails', async () => {
+    const validationError = new Error(
+      'Note validation failed: title: Path `title` is required.',
+    );
+    model.create.mockRejectedValue(validationError);
+
+    const promise = service.create({ content: 'hello' } as CreateNoteDto);
+    await expect(promise).rejects.toBeInstanceOf(BadRequestException);
+    await expect(promise).rejects.toThrow(
+      'Failed to create note: Note validation failed: title: Path `title` is required.',
+    );
   });
 
   it('should return notes list', async () => {
