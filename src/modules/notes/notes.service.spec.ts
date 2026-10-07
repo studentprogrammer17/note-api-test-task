@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Note } from './notes.schema';
-import { Types } from 'mongoose';
+import { Note, NoteSchema } from './notes.schema';
+import { Mongoose, Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
 import { CreateNoteDto } from './dto/create-note.dto';
 
@@ -88,6 +88,21 @@ describe('NotesService', () => {
       id,
       dto,
       expect.objectContaining({ new: true, runValidators: true }),
+    );
+  });
+
+  it('should return 400 with the reason when updating with an empty title', async () => {
+    const id = new Types.ObjectId().toHexString();
+    const NoteModel = new Mongoose().model(Note.name, NoteSchema);
+    const validationError = new NoteModel({ title: '' }).validateSync();
+    model.findByIdAndUpdate.mockReturnValue({
+      exec: jest.fn().mockRejectedValue(validationError),
+    });
+
+    const promise = service.update(id, { title: '' });
+    await expect(promise).rejects.toBeInstanceOf(BadRequestException);
+    await expect(promise).rejects.toThrow(
+      'Failed to update note: Note validation failed: title: Path `title` is required.',
     );
   });
 
