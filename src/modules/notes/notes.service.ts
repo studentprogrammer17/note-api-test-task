@@ -24,9 +24,18 @@ export class NotesService {
     }
   }
 
-  async findAll(tag?: string) {
+  async findAll(tag?: string, search?: string) {
     try {
-      const filter = tag ? { tags: tag } : {};
+      const filter: Record<string, unknown> = tag ? { tags: tag } : {};
+      const term = search?.trim();
+      if (term) {
+        // Escaped so a search for "c++" or "a.b" matches literally.
+        const pattern = new RegExp(
+          term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+          'i',
+        );
+        filter.$or = [{ title: pattern }, { content: pattern }];
+      }
       return await this.noteModel.find(filter).exec();
     } catch (err) {
       throw new InternalServerErrorException('Failed to get notes: ', err);

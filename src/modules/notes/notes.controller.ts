@@ -25,8 +25,8 @@ export class NotesController {
   }
 
   @Get()
-  findAll(@Query('tag') tag?: string) {
-    return this.notesService.findAll(tag);
+  findAll(@Query('tag') tag?: string, @Query('search') search?: string) {
+    return this.notesService.findAll(tag, search);
   }
 
   @Get(':id')
