@@ -24,7 +24,12 @@ export class NotesService {
     }
   }
 
-  async findAll(tag?: string, search?: string, sort?: string) {
+  async findAll(
+    tag?: string,
+    search?: string,
+    sort?: string,
+    limit?: string,
+  ) {
     try {
       const filter: Record<string, unknown> = tag ? { tags: tag } : {};
       const term = search?.trim();
@@ -38,7 +43,14 @@ export class NotesService {
       }
       // Newest first unless the caller asks for the oldest notes first.
       const order = sort === 'oldest' ? 1 : -1;
-      return await this.noteModel.find(filter).sort({ createdAt: order }).exec();
+      // At most 100 notes per request; anything else falls back to 20.
+      const parsed = Number.parseInt(limit ?? '', 10);
+      const max = parsed > 0 ? Math.min(parsed, 100) : 20;
+      return await this.noteModel
+        .find(filter)
+        .sort({ createdAt: order })
+        .limit(max)
+        .exec();
     } catch (err) {
       throw new InternalServerErrorException('Failed to get notes: ', err);
     }
