@@ -24,7 +24,7 @@ export class NotesService {
     }
   }
 
-  async findAll(tag?: string, search?: string) {
+  async findAll(tag?: string, search?: string, sort?: string) {
     try {
       const filter: Record<string, unknown> = tag ? { tags: tag } : {};
       const term = search?.trim();
@@ -36,7 +36,9 @@ export class NotesService {
         );
         filter.$or = [{ title: pattern }, { content: pattern }];
       }
-      return await this.noteModel.find(filter).exec();
+      // Newest first unless the caller asks for the oldest notes first.
+      const order = sort === 'oldest' ? 1 : -1;
+      return await this.noteModel.find(filter).sort({ createdAt: order }).exec();
     } catch (err) {
       throw new InternalServerErrorException('Failed to get notes: ', err);
     }
