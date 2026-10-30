@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotesService } from './notes.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Note } from './notes.schema';
-import { Types } from 'mongoose';
+import { Note, NoteSchema } from './notes.schema';
+import { model as mongooseModel, Types } from 'mongoose';
 import { BadRequestException } from '@nestjs/common';
 import { CreateNoteDto } from './dto/create-note.dto';
 
@@ -89,6 +89,20 @@ describe('NotesService', () => {
       dto,
       expect.objectContaining({ new: true, runValidators: true }),
     );
+  });
+
+  it('should return 400 when updating a note with an empty title', async () => {
+    const id = new Types.ObjectId().toHexString();
+    // The same ValidationError mongoose raises with runValidators for title: ''.
+    const NoteModel = mongooseModel('NoteValidationSpec', NoteSchema);
+    const validationError = new NoteModel({ title: '' }).validateSync();
+    model.findByIdAndUpdate.mockReturnValue({
+      exec: jest.fn().mockRejectedValue(validationError),
+    });
+
+    const promise = service.update(id, { title: '' });
+    await expect(promise).rejects.toBeInstanceOf(BadRequestException);
+    await expect(promise).rejects.toThrow('Path `title` is required.');
   });
 
   it('should delete a note', async () => {
